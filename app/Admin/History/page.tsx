@@ -1,45 +1,31 @@
 "use client";
-import React, { useState } from "react";
+import React from "react";
 import { FileDown, FileText } from "lucide-react";
-// Gunakan relative path jika alias @/ bermasalah
 import { useGeneratePDF } from "../../../hooks/useGeneratePDF";
+import { useLembur } from "../../contexts/LemburContext";
 
 export default function AdminHistoryPage() {
-  // Panggil fungsi asli dari hook
   const { generateLemburPDF } = useGeneratePDF();
-
-  // Data sesuai dokumen fisik [cite: 5, 6]
-  const [allHistory] = useState([
-    {
-      id: 1,
-      nama: "ABDUL AZIS",
-      tanggal: "24-01-2026",
-      hari: "Sabtu",
-      jam: "17:00-21:00",
-      durasi: "4 Jam",
-      keterangan: "JEMPUT BU Austri dan Bu AMBAR",
-      status: "Approved",
-    },
-  ]);
+  const { getSubmissionsByStatus } = useLembur();
+  const allHistory = getSubmissionsByStatus("Approved");
 
   const handlePrint = (item: any) => {
-    // Mapping data agar sesuai dengan template HC [cite: 9, 10]
     const payload = {
-      nama: item.nama, // [cite: 5]
-      jabatan: "DRIVER", // [cite: 3]
-      periode: "JANUARI 2026", // [cite: 4]
+      nama: item.nama,
+      jabatan: item.jabatan,
+      periode: item.periode,
       items: [
         {
-          tanggal: item.tanggal, // [cite: 6]
+          tanggal: item.tanggal,
           hari: item.hari,
-          jam: item.jam, // [cite: 6]
+          jam: item.jam,
+          jamArray: item.jamArray,
           durasi: item.durasi,
-          keterangan: item.keterangan, // [cite: 6]
+          keterangan: item.keterangan,
         },
       ],
     };
 
-    // Sekarang ini akan menjalankan logika jsPDF, bukan JSON
     generateLemburPDF(payload);
   };
 
@@ -48,7 +34,7 @@ export default function AdminHistoryPage() {
       <div className="flex justify-between items-end mb-8">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">History Lembur</h1>
-          <p className="text-slate-500 text-sm mt-1">Arsip data lembur divalidasi oleh HC[cite: 9].</p>
+          <p className="text-slate-500 text-sm mt-1">Arsip data lembur yang telah divalidasi oleh HC.</p>
         </div>
         <button className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl text-xs font-bold hover:bg-slate-50 shadow-sm transition-all">
           <FileDown size={16} className="text-green-600" />
@@ -63,23 +49,33 @@ export default function AdminHistoryPage() {
               <th className="p-5 text-[10px] font-bold text-slate-500 uppercase">Driver</th>
               <th className="p-5 text-[10px] font-bold text-slate-500 uppercase text-center">Tanggal</th>
               <th className="p-5 text-[10px] font-bold text-slate-500 uppercase text-center">Jam</th>
+              <th className="p-5 text-[10px] font-bold text-slate-500 uppercase">Keterangan</th>
               <th className="p-5 text-[10px] font-bold text-slate-500 uppercase text-right">Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {allHistory.map((item) => (
-              <tr key={item.id} className="hover:bg-slate-50/30 transition-colors">
-                <td className="p-5 text-sm font-bold text-slate-800 uppercase">{item.nama}</td>
-                <td className="p-5 text-center text-sm text-slate-600">{item.tanggal}</td>
-                <td className="p-5 text-center text-sm font-mono text-slate-600">{item.jam}</td>
-                <td className="p-5 text-right">
-                  <button onClick={() => handlePrint(item)} className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 text-xs font-bold transition-all">
-                    <FileText size={14} />
-                    CETAK PDF
-                  </button>
+            {allHistory.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="p-8 text-center text-slate-400">
+                  Belum ada data lembur yang disetujui
                 </td>
               </tr>
-            ))}
+            ) : (
+              allHistory.map((item) => (
+                <tr key={item.id} className="hover:bg-slate-50/30 transition-colors">
+                  <td className="p-5 text-sm font-bold text-slate-800 uppercase">{item.nama}</td>
+                  <td className="p-5 text-center text-sm text-slate-600">{item.tanggal}</td>
+                  <td className="p-5 text-center text-sm font-mono text-slate-600">{item.jam}</td>
+                  <td className="p-5 text-sm text-slate-600 italic">{item.keterangan}</td>
+                  <td className="p-5 text-right">
+                    <button onClick={() => handlePrint(item)} className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 text-xs font-bold transition-all">
+                      <FileText size={14} />
+                      CETAK PDF
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

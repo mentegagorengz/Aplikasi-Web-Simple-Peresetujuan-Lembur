@@ -1,13 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
+import { CheckCircle, XCircle } from "lucide-react";
+import { useLembur } from "../../contexts/LemburContext";
 
 export default function ApprovalPage() {
-  const [submissions, setSubmissions] = useState([{ id: 1, nama: "ABDUL AZIS", periode: "Januari 2026", status: "Pending", tanggal: "2026-01-24" }]);
-
-  const handleApprove = (id: number) => {
-    setSubmissions(submissions.map((s) => (s.id === id ? { ...s, status: "Approved" } : s)));
-  };
+  const { getSubmissionsByStatus, approveSubmission, rejectSubmission } = useLembur();
+  const submissions = getSubmissionsByStatus("Pending");
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -21,32 +20,43 @@ export default function ApprovalPage() {
           <thead>
             <tr className="bg-slate-50/50 border-b border-slate-200">
               <th className="p-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Nama Pegawai</th>
-              <th className="p-5 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Periode</th>
-              <th className="p-5 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Status</th>
+              <th className="p-5 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Tanggal</th>
+              <th className="p-5 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Jam</th>
+              <th className="p-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Keterangan</th>
               <th className="p-5 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {submissions.map((sub) => (
-              <tr key={sub.id} className="hover:bg-slate-50/50 transition-colors">
-                <td className="p-5">
-                  <span className="font-bold text-slate-800 text-sm uppercase">{sub.nama}</span>
-                </td>
-                <td className="p-5 text-center text-slate-600 text-sm">{sub.periode}</td>
-                <td className="p-5 text-center">
-                  <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${sub.status === "Approved" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>{sub.status}</span>
-                </td>
-                <td className="p-5 text-right">
-                  {sub.status === "Pending" ? (
-                    <button onClick={() => handleApprove(sub.id)} className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 transition-all text-xs font-bold shadow-sm">
-                      APPROVE
-                    </button>
-                  ) : (
-                    <button className="bg-slate-100 text-slate-600 px-5 py-2 rounded-lg text-xs font-bold cursor-default">BERHASIL</button>
-                  )}
+            {submissions.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="p-8 text-center text-slate-400">
+                  Tidak ada pengajuan yang menunggu persetujuan
                 </td>
               </tr>
-            ))}
+            ) : (
+              submissions.map((sub) => (
+                <tr key={sub.id} className="hover:bg-slate-50/50 transition-colors">
+                  <td className="p-5">
+                    <span className="font-bold text-slate-800 text-sm uppercase">{sub.nama}</span>
+                  </td>
+                  <td className="p-5 text-center text-slate-600 text-sm">{sub.tanggal}</td>
+                  <td className="p-5 text-center text-slate-600 text-sm font-mono">{sub.jam}</td>
+                  <td className="p-5 text-slate-600 text-sm italic">{sub.keterangan}</td>
+                  <td className="p-5 text-right">
+                    <div className="flex gap-2 justify-end">
+                      <button onClick={() => approveSubmission(sub.id)} className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-all text-xs font-bold shadow-sm flex items-center gap-1">
+                        <CheckCircle size={14} />
+                        APPROVE
+                      </button>
+                      <button onClick={() => rejectSubmission(sub.id)} className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-all text-xs font-bold shadow-sm flex items-center gap-1">
+                        <XCircle size={14} />
+                        REJECT
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

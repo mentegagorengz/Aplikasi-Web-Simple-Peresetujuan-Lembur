@@ -2,7 +2,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
 export const useGeneratePDF = () => {
-  const generateLemburPDF = (data: any) => {
+  const generateLemburPDF = async (data: any) => {
     const doc = new jsPDF("l", "mm", "a4");
 
     // 1. Header Identitas PT HIP [cite: 7]
@@ -89,19 +89,13 @@ export const useGeneratePDF = () => {
       },
     });
 
-    // 4. Area Tanda Tangan (Posisi dinamis dengan margin lebih luas)
-    // Jarak dari tabel ke tanda tangan kita perlebar menjadi 25mm (sebelumnya 15mm)
+    // 4. Area Tanda Tangan (Posisi dinamis)
     let finalY = (doc as any).lastAutoTable.finalY + 25;
 
-    // Batas aman untuk A4 Landscape adalah sekitar 210mm total tinggi kertas.
-    // Kita set batas 'break' di 170mm. Jika tabel berakhir lebih dari itu,
-    // tanda tangan akan otomatis pindah ke halaman baru.
-    const pageHeight = doc.internal.pageSize.height; // ~210mm
-    const threshold = 170;
-
-    if (finalY > threshold) {
+    // Proteksi Halaman
+    if (finalY > 170) {
       doc.addPage();
-      finalY = 30; // Mulai dari posisi agak bawah di halaman baru agar tidak terlalu mepet atas
+      finalY = 30;
     }
 
     doc.setFontSize(9);
@@ -110,17 +104,47 @@ export const useGeneratePDF = () => {
     doc.text("Mengetahui,", 20, finalY);
     doc.text("Human Capital Departemen", 20, finalY + 5);
 
+    // --- LOGIKA TANDA TANGAN DIGITAL ---
+    // Ukuran dikunci (Fixed Size) agar konsisten meskipun file aslinya besar/kecil
+    const signWidth = 50; // 50mm (diperbesar dari 35mm)
+    const signHeight = 50; // 30mm (diperbesar agar tidak gepeng)
+
+    // Load image sebagai base64
+    try {
+      const response = await fetch("/signatures/hc-sign.png");
+      const blob = await response.blob();
+      const reader = new FileReader();
+
+      await new Promise((resolve, reject) => {
+        reader.onloadend = () => {
+          if (reader.result) {
+            // Posisi X=25 agar sedikit menjorok ke kanan dari teks "Mengetahui"
+            // Posisi Y dinaikkan ke atas (finalY+3 dari sebelumnya finalY+7)
+            doc.addImage(reader.result as string, "PNG", 25, finalY - 5, signWidth, signHeight);
+            resolve(true);
+          } else {
+            reject(new Error("Failed to load image"));
+          }
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (error) {
+      console.warn("Failed to load signature image:", error);
+      // Lanjutkan tanpa signature jika gagal
+    }
+
     doc.setFont("helvetica", "bold");
-    doc.text("Tri Budi Ambarsari", 20, finalY + 30); // Jarak nama diperlebar (30mm)
-    doc.line(20, finalY + 31, 70, finalY + 31);
+    doc.text("Tri Budi Ambarsari", 20, finalY + 30);
+    doc.line(20, finalY + 31, 70, finalY + 31); // Garis bawah nama
 
     // --- SISI KANAN (PEGAWAI) ---
     doc.setFont("helvetica", "normal");
     doc.text("Pegawai,", 220, finalY + 5);
 
     doc.setFont("helvetica", "bold");
-    doc.text(data.nama, 220, finalY + 30); // Jarak nama diperlebar (30mm)
-    doc.line(220, finalY + 31, 270, finalY + 31);
+    doc.text(data.nama, 220, finalY + 30);
+    doc.line(220, finalY + 31, 270, finalY + 31); // Garis bawah nama
 
     doc.save(`LEMBURAN_${data.nama}.pdf`);
   };
