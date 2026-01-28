@@ -8,7 +8,7 @@ export default function RootPage() {
    * agar flow aplikasinya rapi.
    */
 
-  redirect("/Login");
+  redirect("/User/Submission");
 
   // Return null karena fungsi ini hanya melakukan redirect
   return null;

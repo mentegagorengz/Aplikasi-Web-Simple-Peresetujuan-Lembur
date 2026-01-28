@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed; 
+        }
+
+        th, td {
+            border: 1px solid black;
+            text-align: center;
+            padding: 5px;
+            font-size: 10px;
+        }
+
+        
+        thead th {
+            background-color: #8e84bd;
+            color: white;
+            text-transform: uppercase;
+        }
+
+        
+        tbody td {
+            height: 30px;
+        }
+
+        
+        .col-ket { width: 25%; }
+        .col-jam { width: 25px; } 
+    </style>
+</head>
+<body>
+
+    <table>
+        <thead>
+            <tr>
+                <th rowspan="2" style="width: 110px;">TANGGAL</th>
+                <th rowspan="2" style="width: 80px;">HARI</th>
+                <th colspan="24">JAM LEMBUR</th>
+                <th rowspan="2" style="width: 100px;">PARAF</th>
+                <th rowspan="2" class="col-ket">KETERANGAN</th>
+            </tr>
+            <tr>
+                <th class="col-jam">1</th><th class="col-jam">2</th><th class="col-jam">3</th>
+                <th class="col-jam">4</th><th class="col-jam">5</th><th class="col-jam">6</th>
+                <th class="col-jam">7</th><th class="col-jam">8</th><th class="col-jam">9</th>
+                <th class="col-jam">10</th><th class="col-jam">11</th><th class="col-jam">12</th>
+                <th class="col-jam">13</th><th class="col-jam">14</th><th class="col-jam">15</th>
+                <th class="col-jam">16</th><th class="col-jam">17</th><th class="col-jam">18</th>
+                <th class="col-jam">19</th><th class="col-jam">20</th><th class="col-jam">21</th>
+                <th class="col-jam">22</th><th class="col-jam">23</th><th class="col-jam">24</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td></td><td></td>
+                <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+                <td></td><td></td>
+            </tr>
+            </tbody>
+    </table>
+
+</body>
+
+<script>
+    const tbody = document.querySelector('tbody');
+    const jumlahBaris = 7; 
+    const jumlahKolom = 28; 
+    tbody.innerHTML = '';
+
+    for (let i = 0; i < jumlahBaris; i++) {
+        let row = document.createElement('tr');
+        for (let j = 0; j < jumlahKolom; j++) {
+            let cell = document.createElement('td');
+            row.appendChild(cell);
+        }
+        tbody.appendChild(row);
+    }
+</script>
+
+</html>
