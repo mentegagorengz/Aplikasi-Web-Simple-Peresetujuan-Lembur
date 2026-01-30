@@ -1,14 +1,80 @@
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { History, Calendar, Clock, CheckCircle2, Timer, XCircle } from "lucide-react";
-import { useLembur } from "../../contexts/LemburContext";
-import { useAuth } from "../../contexts/AuthContext";
+
+interface Jam {
+  mulai: string;
+  selesai: string;
+}
+
+interface HistoryItem {
+  id: number;
+  tanggal: string;
+  jam_array?: Jam[];
+  keterangan?: string;
+  status?: string;
+}
 
 export default function UserHistoryPage() {
-  const { getSubmissionsByUser } = useLembur();
-  const { user } = useAuth();
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [user, setUser] = useState<{ nama: string } | null>(null);
 
-  const history = user ? getSubmissionsByUser(user.nama) : [];
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [userRes, historyRes] = await Promise.all([
+          fetch("/api/auth/me"),
+          fetch("/api/overtime/history"),
+        ]);
+
+        if (userRes.ok) {
+          const userData = await userRes.json();
+          setUser(userData.data ?? null);
+        } else {
+          console.error("Failed to fetch user:", userRes.status);
+        }
+
+        if (historyRes.ok) {
+          const historyData = await historyRes.json();
+          setHistory(historyData.data ?? []);
+        } else {
+          console.error("Failed to fetch history:", historyRes.status);
+        }
+      } catch (error) {
+        console.error("Failed to fetch data:", error);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const renderStatus = (status?: string) => {
+    switch ((status ?? "").toLowerCase()) {
+      case "approved":
+      case "accept":
+        return (
+          <div className="inline-flex items-center gap-2 text-green-600">
+            <CheckCircle2 size={16} />
+            <span className="text-[12px] font-medium">Disetujui</span>
+          </div>
+        );
+      case "rejected":
+      case "declined":
+        return (
+          <div className="inline-flex items-center gap-2 text-red-600">
+            <XCircle size={16} />
+            <span className="text-[12px] font-medium">Ditolak</span>
+          </div>
+        );
+      default:
+        return (
+          <div className="inline-flex items-center gap-2 text-amber-600">
+            <Timer size={16} />
+            <span className="text-[12px] font-medium">Menunggu</span>
+          </div>
+        );
+    }
+  };
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -16,8 +82,10 @@ export default function UserHistoryPage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Riwayat Lembur Saya</h1>
           <p className="text-slate-500 text-sm mt-1 flex items-center gap-2">
-            <span className="font-bold text-blue-600 uppercase tracking-wider text-[10px] bg-blue-50 px-2 py-0.5 rounded">Driver</span>
-            {user?.nama || "Guest"}
+            <span className="font-bold text-blue-600 uppercase tracking-wider text-[10px] bg-blue-50 px-2 py-0.5 rounded">
+              Driver
+            </span>
+            {user?.nama ?? "Loading..."}
           </p>
         </div>
         <div className="bg-white p-3 rounded-2xl shadow-sm border border-slate-100">
@@ -43,6 +111,7 @@ export default function UserHistoryPage() {
               <th className="p-5 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">Status</th>
             </tr>
           </thead>
+
           <tbody className="divide-y divide-slate-100 text-sm">
             {history.length === 0 ? (
               <tr>
@@ -51,42 +120,44 @@ export default function UserHistoryPage() {
                 </td>
               </tr>
             ) : (
-              history.map((item) => (
-                <tr key={item.id} className="hover:bg-slate-50/30 transition-colors">
-                  <td className="p-5 text-slate-700 font-medium">{item.tanggal}</td>
-                  <td className="p-5 text-center font-mono text-slate-600">{item.jam}</td>
-                  <td className="p-5">
-                    <p className="text-slate-500 italic text-xs capitalize leading-relaxed">"{item.keterangan.toLowerCase()}"</p>
-                  </td>
-                  <td className="p-5 text-center">
-                    <div className="flex justify-center">
-                      {item.status === "Approved" ? (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-green-50 text-green-700 border border-green-100">
-                          <CheckCircle2 size={12} />
-                          {item.status}
-                        </span>
-                      ) : item.status === "Rejected" ? (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-50 text-red-700 border border-red-100">
-                          <XCircle size={12} />
-                          {item.status}
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-yellow-50 text-yellow-700 border border-yellow-100">
-                          <Timer size={12} />
-                          {item.status}
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))
+              history.map((item) => {
+                const jamData = item.jam_array?.[0] ?? null;
+                const formattedDate = (() => {
+                  try {
+                    return new Date(item.tanggal).toLocaleDateString("id-ID", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    });
+                  } catch {
+                    return item.tanggal ?? "-";
+                  }
+                })();
+
+                return (
+                  <tr key={item.id} className="hover:bg-slate-50/30 transition-colors">
+                    <td className="p-5 text-slate-700 font-medium">{formattedDate}</td>
+                    <td className="p-5 text-center font-mono text-slate-600 bg-slate-50/50 text-[11px]">
+                      {jamData ? `${jamData.mulai} - ${jamData.selesai}` : "---"}
+                    </td>
+                    <td className="p-5">
+                      <p className="text-slate-500 italic text-xs leading-relaxed max-w-xs truncate">
+                        "{item.keterangan ?? "-"}"
+                      </p>
+                    </td>
+                    <td className="p-5 text-center">{renderStatus(item.status)}</td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
       </div>
 
       <div className="mt-6 flex justify-end">
-        <p className="text-[10px] text-slate-400 uppercase tracking-widest font-medium">Menampilkan {history.length} data riwayat</p>
+        <p className="text-[10px] text-slate-400 uppercase tracking-widest font-medium">
+          Menampilkan {history.length} data riwayat
+        </p>
       </div>
     </div>
   );

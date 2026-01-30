@@ -1,12 +1,58 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { CheckCircle, XCircle } from "lucide-react";
-import { useLembur } from "../../contexts/LemburContext";
+
+interface Submission {
+  id: number;
+  nama: string;
+  tanggal: string;
+  jam: string;
+  keterangan: string;
+}
 
 export default function ApprovalPage() {
-  const { getSubmissionsByStatus, approveSubmission, rejectSubmission } = useLembur();
-  const submissions = getSubmissionsByStatus("Pending");
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
+
+  useEffect(() => {
+    fetchSubmissions();
+  }, []);
+
+  const fetchSubmissions = async () => {
+    try {
+      const res = await fetch("/api/overtime/pending");
+      if (res.ok) {
+        const data = await res.json();
+        setSubmissions(data.data || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch submissions:", error);
+    }
+  };
+
+  const approveSubmission = async (id: number) => {
+    try {
+      const res = await fetch(`/api/overtime/approve/${id}`, { method: "POST" });
+      if (res.ok) {
+        alert("Pengajuan disetujui!");
+        fetchSubmissions();
+      }
+    } catch (error) {
+      console.error("Failed to approve:", error);
+    }
+  };
+
+  const rejectSubmission = async (id: number) => {
+    try {
+      const res = await fetch(`/api/overtime/reject/${id}`, { method: "POST" });
+      if (res.ok) {
+        alert("Pengajuan ditolak!");
+        fetchSubmissions();
+      }
+    } catch (error) {
+      console.error("Failed to reject:", error);
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto">

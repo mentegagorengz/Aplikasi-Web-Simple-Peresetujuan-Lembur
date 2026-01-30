@@ -1,0 +1,36 @@
+{
+  "status": "success",
+  "data": {
+    "user_id": 1024,
+    "username": "budi_setiawan",
+    "is_active": true,
+    "contact": {
+      "email": "budi.s@example.com",
+      "phone": "+628123456789"
+    },
+    "preferences": [
+      "gadgets",
+      "travel",
+      "photography"
+    ],
+    "latest_orders": [
+      {
+        "order_id": "ORD-2026-001",
+        "total_amount": 150000.00,
+        "currency": "IDR",
+        "status": "shipped",
+        "items": [
+          {
+            "product_id": "P-01",
+            "name": "Wireless Mouse",
+            "quantity": 1
+          }
+        ]
+      }
+    ]
+  },
+  "metadata": {
+    "timestamp": "2026-01-29T08:50:00Z",
+    "version": "v1.2"
+  }
+}

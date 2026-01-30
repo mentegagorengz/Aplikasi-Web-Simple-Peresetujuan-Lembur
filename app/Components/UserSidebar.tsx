@@ -2,21 +2,25 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { FileText, History, LogOut, Menu } from "lucide-react";
-import { useAuth } from "../contexts/AuthContext";
 
 export default function UserSidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { logout } = useAuth();
 
   const navItems = [
     { href: "/User/Submission", label: "Pengajuan", icon: FileText },
     { href: "/User/History", label: "History", icon: History },
   ];
 
-  const handleLogout = () => {
-    logout();
-    router.push("/Login");
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      router.push("/Login");
+      router.refresh();
+    } catch (error) {
+      console.error("Logout failed:", error);
+      router.push("/Login");
+    }
   };
 
   return (

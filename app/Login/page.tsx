@@ -2,29 +2,46 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "../contexts/AuthContext";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const { login } = useAuth();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
-    const success = login(username, password);
+    try {
+      // MENGHUBUNGKAN KE BACKEND API JWT
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
 
-    if (success) {
-      if (username === "azis") {
-        router.push("/User/Submission");
-      } else if (username === "tribudi") {
-        router.push("/Admin/Dashboard");
+      const result = await res.json();
+
+      if (!res.ok) {
+        throw new Error(result.error?.message || "Kredensial tidak valid");
       }
-    } else {
-      setError("Kredensial tidak valid. Silakan hubungi bagian IT/HC.");
+
+      // LOGIK REDIRECT BERDASARKAN JABATAN (Bukan Nama)
+      const userJabatan = result.data.user.jabatan;
+
+      if (userJabatan === "HC") {
+        router.push("/Admin/Dashboard");
+      } else {
+        // Driver atau OB diarahkan ke form pengajuan
+        router.push("/User/Submission");
+      }
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -49,8 +66,8 @@ export default function LoginPage() {
             <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm" placeholder="••••••••" required />
           </div>
 
-          <button type="submit" className="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 rounded-md transition-colors shadow-md mt-2">
-            MASUK SISTEM
+          <button type="submit" disabled={loading} className={`w-full ${loading ? "bg-slate-400" : "bg-blue-700 hover:bg-blue-800"} text-white font-bold py-3 rounded-md transition-colors shadow-md mt-2`}>
+            {loading ? "MEMPROSES..." : "MASUK SISTEM"}
           </button>
 
           <div className="text-center mt-4 text-[10px] text-slate-400">&copy; 2026 PT Hotel Indonesia Properti. All Rights Reserved.</div>

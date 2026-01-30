@@ -1,23 +1,28 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutGrid, ClipboardCheck, ScrollText, LogOut, Menu } from "lucide-react";
-import { useAuth } from "../contexts/AuthContext";
+import { LayoutGrid, ClipboardCheck, ScrollText, Users, LogOut, Menu } from "lucide-react";
 
 export default function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { logout } = useAuth();
 
   const navItems = [
     { href: "/Admin/Dashboard", label: "Dashboard", icon: LayoutGrid },
     { href: "/Admin/Approval", label: "Persetujuan", icon: ClipboardCheck },
     { href: "/Admin/History", label: "History", icon: ScrollText },
+    { href: "/Admin/Employee", label: "Daftar Pegawai", icon: Users },
   ];
 
-  const handleLogout = () => {
-    logout();
-    router.push("/Login");
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      router.push("/Login");
+      router.refresh();
+    } catch (error) {
+      console.error("Logout failed:", error);
+      router.push("/Login");
+    }
   };
 
   return (
