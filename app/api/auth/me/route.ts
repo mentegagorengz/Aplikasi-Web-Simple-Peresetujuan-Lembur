@@ -4,53 +4,102 @@ import { query } from "@/lib/db";
 
 const SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
 
+/**
+ * @api {get} /api/auth/me Mengambil Profil User Terautentikasi
+ * @description Validasi sesi melalui JWT HttpOnly Cookie dan sinkronisasi data database.
+ */
 export async function GET(request: Request) {
+  const timestamp = new Date().toISOString();
+
   try {
-    // 1. Ambil token dari HttpOnly Cookie (Best Practice Security)
-    const token = request.cookies.get("token")?.value;
+    // 1. Ekstraksi Token (Standard Security Check)
+    const token = (request as any).cookies?.get("token")?.value;
 
     if (!token) {
-      return NextResponse.json({ status: "error", message: "Sesi tidak ditemukan" }, { status: 401 });
+      return NextResponse.json(
+        {
+          status: "error",
+          error: { code: "UNAUTHORIZED", message: "Sesi tidak ditemukan atau telah berakhir" },
+          metadata: { timestamp },
+        },
+        { status: 401 },
+      );
     }
 
-    // 2. Verifikasi keaslian JWT
+    // 2. Verifikasi Integritas JWT
     const { payload } = await jwtVerify(token, SECRET);
 
-    // 3. Ambil data terbaru dari DB (Menghindari stale data di frontend)
-    // Gunakan parameter binding ($1) untuk mencegah SQL Injection
-    const res = await query("SELECT id, nama, username, jabatan FROM users WHERE id = $1 LIMIT 1", [payload.userId]);
-
+    // 3. Sinkronisasi Data Real-time (Mencegah Stale Data)
+    const sql = "SELECT id, nama, username, jabatan, status FROM users WHERE id = $1 LIMIT 1";
+    const res = await query(sql, [payload.userId]);
     const user = res.rows[0];
 
-    // 4. Validasi jika user telah dihapus dari sistem namun token masih ada
+    // 4. Validasi Eksistensi & Status Akun
     if (!user) {
-      const response = NextResponse.json({ status: "error", message: "User tidak terdaftar di database" }, { status: 404 });
-      // Hapus token yang sudah tidak valid
+      const response = NextResponse.json(
+        {
+          status: "error",
+          error: { code: "USER_NOT_FOUND", message: "Identitas pengguna tidak valid di database" },
+          metadata: { timestamp },
+        },
+        { status: 404 },
+      );
+
       response.cookies.delete("token");
       return response;
     }
 
-    // 5. Response Sukses (Disesuaikan dengan kebutuhan frontend Anda)
-    // Kita bungkus dalam objek 'user' agar sesuai dengan 'userData.user' di frontend
+    if (user.status !== "Aktif") {
+      const response = NextResponse.json(
+        {
+          status: "error",
+          error: { code: "ACCOUNT_INACTIVE", message: "Akun Anda saat ini sedang dinonaktifkan" },
+          metadata: { timestamp },
+        },
+        { status: 403 },
+      );
+
+      response.cookies.delete("token");
+      return response;
+    }
+
+    // 5. Response Sukses dengan Template Best Practice
     return NextResponse.json({
       status: "success",
-      user: {
-        id: user.id,
-        nama: user.nama,
-        username: user.username,
-        jabatan: user.jabatan,
+      message: "Profil user berhasil dimuat",
+      data: {
+        user: {
+          id: user.id,
+          nama: user.nama,
+          username: user.username,
+          jabatan: user.jabatan,
+          status: user.status,
+        },
+      },
+      metadata: {
+        timestamp,
+        apiVersion: "1.0",
+        path: "/api/auth/me",
       },
     });
   } catch (error: any) {
-    console.error("Auth Me Error Log:", error.message);
+    console.error("Critical Auth Me Error:", error.message);
 
-    // 6. Penanganan spesifik jika token expired
-    if (error.code === "ERR_JWT_EXPIRED") {
-      const response = NextResponse.json({ status: "error", message: "Sesi Anda telah berakhir" }, { status: 401 });
-      response.cookies.delete("token");
-      return response;
-    }
+    // 6. Penanganan Spesifik Sesuai Kode Error (Error Mapping)
+    const isExpired = error.code === "ERR_JWT_EXPIRED";
+    const response = NextResponse.json(
+      {
+        status: "error",
+        error: {
+          code: isExpired ? "SESSION_EXPIRED" : "INTERNAL_SERVER_ERROR",
+          message: isExpired ? "Sesi Anda telah berakhir, silakan login kembali" : "Terjadi kegagalan sistem pada layanan identitas",
+        },
+        metadata: { timestamp },
+      },
+      { status: isExpired ? 401 : 500 },
+    );
 
-    return NextResponse.json({ status: "error", message: "Terjadi kesalahan pada server identitas" }, { status: 500 });
+    if (isExpired) response.cookies.delete("token");
+    return response;
   }
 }

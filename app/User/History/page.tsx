@@ -29,7 +29,7 @@ export default function UserHistoryPage() {
 
         if (userRes.ok) {
           const userData = await userRes.json();
-          setUser(userData.data ?? null);
+          setUser(userData.data.user ?? null);
         } else {
           console.error("Failed to fetch user:", userRes.status);
         }

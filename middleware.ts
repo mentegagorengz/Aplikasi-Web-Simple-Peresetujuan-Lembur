@@ -8,7 +8,7 @@ export async function middleware(request: NextRequest) {
   const token = request.cookies.get("token")?.value;
   const { pathname } = request.nextUrl;
 
-  if (pathname.startsWith("/Login") || pathname.startsWith("/api/auth")) {
+  if (pathname.startsWith("/Login") || pathname.startsWith("/api/auth") || pathname.startsWith("/api/users/add")) {
     return NextResponse.next();
   }
 
