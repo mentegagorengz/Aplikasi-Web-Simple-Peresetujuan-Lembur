@@ -1,128 +1,192 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
+// Kosongkan dulu atau gunakan base64 yang valid
+// Untuk menambahkan signature, paste base64 lengkap dengan prefix "data:image/png;base64,..."
+const HC_SIGNATURE_BASE64: string = "";
+
 export const useGeneratePDF = () => {
-  const generateLemburPDF = (data: any) => {
+  // Helper: Mendapatkan nama hari dalam Bahasa Indonesia
+  const getNamaHari = (tanggalStr: string) => {
+    const dateParts = tanggalStr.split("-");
+    const date = new Date(Number(dateParts[2]), Number(dateParts[1]) - 1, Number(dateParts[0]));
+    return date.toLocaleDateString("id-ID", { weekday: "long" });
+  };
+
+  const generateLemburPDF = (data: {
+    nama: string;
+    jabatan: string;
+    periode: string;
+    bulan: number; // 1-12
+    tahun: number;
+    items: Array<{
+      tanggal: string;
+      hari?: string;
+      jam?: string;
+      jamArray?: number[];
+      durasi?: number;
+      keterangan?: string;
+    }>;
+  }) => {
     const doc = new jsPDF("l", "mm", "a4");
 
-    // 1. Header Identitas PT HIP [cite: 7]
+    // 1. Header Identitas PT HIP
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9);
     doc.text("PERHITUNGAN LEMBUR DRIVER", 148.5, 15, { align: "center" });
-    doc.text("KANTOR PUSAT PT HOTEL INDONESIA PROPERTI", 148.5, 20, { align: "center" });
+    doc.text("KANTOR PUSAT PT HOTEL INDONESIA PROPERTI", 148.5, 20, {
+      align: "center",
+    });
 
-    // 2. Informasi Driver [cite: 2, 3, 4, 5]
+    // 2. Informasi Pegawai
     doc.setFontSize(9);
     doc.text(`NAMA      : ${data.nama}`, 20, 35);
     doc.text(`JABATAN   : ${data.jabatan}`, 20, 40);
     doc.text(`PERIODE   : ${data.periode}`, 20, 45);
 
-    // 3. Struktur Tabel 24 Jam
-    const jamHeaders = Array.from({ length: 24 }, (_, i) => ({
-      content: (i + 1).toString(),
-      styles: { halign: "center", valign: "middle" },
-    }));
+    // 3. Persiapkan data tabel
+    const tableBody: (string | number)[][] = [];
 
-    const tableBody = data.items.map((item: any) => {
-      const rowData = [item.tanggal, item.hari];
-      const marks = Array(24).fill("");
-      if (item.jamArray) {
-        item.jamArray.forEach((j: number) => {
-          if (j >= 1 && j <= 24) marks[j - 1] = "X";
-        });
-      }
-      return [...rowData, ...marks, "", item.keterangan];
+    // Urutkan items berdasarkan tanggal
+    const sortedItems = [...data.items].sort((a, b) => {
+      const dateA = a.tanggal.split("-").reverse().join("");
+      const dateB = b.tanggal.split("-").reverse().join("");
+      return dateA.localeCompare(dateB);
     });
 
+    // Loop data yang ada
+    sortedItems.forEach((item) => {
+      const hariName = item.hari || getNamaHari(item.tanggal);
+
+      // Buat array marks untuk 24 jam
+      const marks = Array(24).fill("");
+      if (item.jamArray && Array.isArray(item.jamArray)) {
+        item.jamArray.forEach((j: number) => {
+          if (j >= 1 && j <= 24) marks[j - 1] = "x";
+        });
+      }
+
+      tableBody.push([
+        item.tanggal,
+        hariName,
+        ...marks,
+        "", // Kolom paraf kosong
+        item.keterangan || "",
+      ]);
+    });
+
+    // Tambahkan baris kosong jika kurang dari 7 baris
     const minRows = 7;
     while (tableBody.length < minRows) {
-      const emptyRow = Array(28).fill("");
+      const emptyRow = ["", "", ...Array(24).fill(""), "", ""];
       tableBody.push(emptyRow);
     }
 
+    // 4. Header jam (1-24)
+    const jamHeaders = Array.from({ length: 24 }, (_, i) => ({
+      content: (i + 1).toString(),
+      styles: { halign: "center" as const, valign: "middle" as const },
+    }));
+
+    // 5. Generate tabel dengan autoTable
     autoTable(doc, {
       startY: 55,
       head: [
         [
-          { content: "TANGGAL", rowSpan: 2, styles: { halign: "center", valign: "middle" } },
-          { content: "HARI", rowSpan: 2, styles: { halign: "center", valign: "middle" } },
-          { content: "JAM LEMBUR", colSpan: 24, styles: { halign: "center" } },
-          { content: "PARAF DIREKSI", rowSpan: 2, styles: { halign: "center", valign: "middle" } },
-          { content: "KETERANGAN", rowSpan: 2, styles: { halign: "center", valign: "middle" } },
+          {
+            content: "TANGGAL",
+            rowSpan: 2,
+            styles: { halign: "center", valign: "middle" },
+          },
+          {
+            content: "HARI",
+            rowSpan: 2,
+            styles: { halign: "center", valign: "middle" },
+          },
+          {
+            content: "JAM LEMBUR",
+            colSpan: 24,
+            styles: { halign: "center" },
+          },
+          {
+            content: "PARAF",
+            rowSpan: 2,
+            styles: { halign: "center", valign: "middle" },
+          },
+          {
+            content: "KETERANGAN",
+            rowSpan: 2,
+            styles: { halign: "center", valign: "middle" },
+          },
         ],
         jamHeaders,
       ],
       body: tableBody,
       theme: "grid",
-
-      // --- PENGATURAN KHUSUS BODY ---
       bodyStyles: {
         halign: "center",
         valign: "middle",
         fontSize: 7,
-        fontStyle: "normal",
-        minCellHeight: 8, // Hanya baris body yang menjadi tinggi (8mm)
+        minCellHeight: 8,
       },
-
-      // --- PENGATURAN KHUSUS HEADER ---
       headStyles: {
-        fillColor: [142, 132, 189], // Warna ungu
+        fillColor: [142, 132, 189],
         textColor: [255, 255, 255],
-        fontStyle: "normal",
         fontSize: 7,
-        halign: "center",
-        valign: "middle",
-        minCellHeight: 0, // Header tetap normal mengikuti ukuran teks
       },
-
       columnStyles: {
-        27: { halign: "left", cellWidth: "auto" },
+        27: { halign: "left", cellWidth: "auto" }, // Kolom keterangan align left
       },
-
       styles: {
         lineColor: [0, 0, 0],
         lineWidth: 0.1,
-        fontStyle: "normal",
-        fontSize: 7,
-        cellPadding: 1,
-        // minCellHeight dihapus dari sini agar tidak merusak header
       },
     });
 
-    // 4. Area Tanda Tangan (Posisi dinamis dengan margin lebih luas)
-    // Jarak dari tabel ke tanda tangan kita perlebar menjadi 25mm (sebelumnya 15mm)
-    let finalY = (doc as any).lastAutoTable.finalY + 25;
-
-    // Batas aman untuk A4 Landscape adalah sekitar 210mm total tinggi kertas.
-    // Kita set batas 'break' di 170mm. Jika tabel berakhir lebih dari itu,
-    // tanda tangan akan otomatis pindah ke halaman baru.
-    const pageHeight = doc.internal.pageSize.height; // ~210mm
-    const threshold = 170;
-
-    if (finalY > threshold) {
+    // 6. Area Tanda Tangan
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let finalY = (doc as any).lastAutoTable.finalY + 20;
+    if (finalY > 170) {
       doc.addPage();
-      finalY = 30; // Mulai dari posisi agak bawah di halaman baru agar tidak terlalu mepet atas
+      finalY = 30;
     }
 
     doc.setFontSize(9);
-
-    // --- SISI KIRI (MENGETAHUI - HUMAN CAPITAL) ---
     doc.text("Mengetahui,", 20, finalY);
     doc.text("Human Capital Departemen", 20, finalY + 5);
 
+    // Tambahkan tanda tangan digital jika tersedia
+    if (HC_SIGNATURE_BASE64 && HC_SIGNATURE_BASE64.length > 100) {
+      try {
+        doc.addImage(HC_SIGNATURE_BASE64, "PNG", 25, finalY + 7, 35, 18);
+      } catch (error) {
+        console.error("Gagal memuat tanda tangan digital:", error);
+        // Tambahkan placeholder jika gagal
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "italic");
+        doc.text("(Tanda Tangan Digital)", 25, finalY + 15);
+      }
+    } else {
+      // Tambahkan placeholder jika signature tidak ada
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "italic");
+      doc.text("(Tanda Tangan Digital)", 25, finalY + 15);
+    }
+
     doc.setFont("helvetica", "bold");
-    doc.text("Tri Budi Ambarsari", 20, finalY + 30); // Jarak nama diperlebar (30mm)
+    doc.setFontSize(9);
+    doc.text("Tri Budi Ambarsari", 20, finalY + 30);
     doc.line(20, finalY + 31, 70, finalY + 31);
 
-    // --- SISI KANAN (PEGAWAI) ---
     doc.setFont("helvetica", "normal");
     doc.text("Pegawai,", 220, finalY + 5);
-
     doc.setFont("helvetica", "bold");
-    doc.text(data.nama, 220, finalY + 30); // Jarak nama diperlebar (30mm)
+    doc.text(data.nama, 220, finalY + 30);
     doc.line(220, finalY + 31, 270, finalY + 31);
 
-    doc.save(`LEMBURAN_${data.nama}.pdf`);
+    // 7. Save PDF
+    const fileName = `REKAP_LEMBUR_${data.nama.replace(/\s+/g, "_")}_${data.periode}.pdf`;
+    doc.save(fileName);
   };
 
   return { generateLemburPDF };
