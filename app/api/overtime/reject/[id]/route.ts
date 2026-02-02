@@ -21,7 +21,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       return NextResponse.json({ status: "error", message: "Forbidden - HC only" }, { status: 403 });
     }
 
-    // Await params karena sekarang Promise di Next.js 15
     const { id: overtimeId } = await params;
 
     const sql = `

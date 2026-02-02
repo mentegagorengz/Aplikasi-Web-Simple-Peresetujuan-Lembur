@@ -9,10 +9,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const timestamp = new Date().toISOString();
 
   try {
-    // Unwrap params
     const { id: overtimeId } = await params;
 
-    // Verifikasi token admin
     const cookieStore = await cookies();
     const token = cookieStore.get("token")?.value;
     if (!token) {
@@ -21,12 +19,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     const { payload } = await jwtVerify(token, SECRET);
 
-    // Cek apakah user adalah HC (admin)
     if (payload.jabatan !== "HC") {
       return NextResponse.json({ status: "error", message: "Forbidden - HC only" }, { status: 403 });
     }
 
-    // Update status menjadi Approved
     const sql = `
       UPDATE overtime 
       SET status = 'Approved', updated_at = NOW()
@@ -65,7 +61,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
 export async function GET() {
   try {
-    // 1. Validasi Keamanan: Memastikan hanya Admin HC yang bisa menarik histori kolektif
     const cookieStore = await cookies();
     const token = cookieStore.get("token")?.value;
 
@@ -79,7 +74,6 @@ export async function GET() {
       return NextResponse.json({ status: "error", message: "Forbidden - Akses terbatas untuk HC" }, { status: 403 });
     }
 
-    // 2. Query SQL: Menggabungkan tabel overtime dan users untuk mendapatkan Nama & Jabatan
     const sql = `
       SELECT 
         o.id, 

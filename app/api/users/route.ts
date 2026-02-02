@@ -21,54 +21,28 @@ export async function GET() {
         metadata: {
           total_count: result.rowCount,
           timestamp,
-          api_version: "1.0"
+          api_version: "1.0",
         },
       },
       { status: 200 },
     );
   } catch (error: any) {
     console.error("Fetch Users Error Log:", error);
-    
+
     return NextResponse.json(
       {
-      status: "error",
-      error: {
-        code: "FETCH_DATA_FAILED",
-        message: "Gagal memuat daftar pegawai dari server",
-        details: process.env.NODE_ENV === "development" ? error.message : undefined,
+        status: "error",
+        error: {
+          code: "FETCH_DATA_FAILED",
+          message: "Gagal memuat daftar pegawai dari server",
+          details: process.env.NODE_ENV === "development" ? error.message : undefined,
+        },
+        metadata: { timestamp },
       },
-      metadata: { timestamp },
-    },      
       { status: 500 },
     );
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // import { NextResponse } from "next/server";
 // import { query } from "@/lib/db";
@@ -77,8 +51,8 @@ export async function GET() {
 //   try {
 //     // Mengambil data user tanpa menyertakan kolom password demi keamanan (Security Best Practice)
 //     const sql = `
-//       SELECT id, nama, username, jabatan, status, signature, created_at 
-//       FROM users 
+//       SELECT id, nama, username, jabatan, status, signature, created_at
+//       FROM users
 //       ORDER BY created_at DESC
 //     `;
 

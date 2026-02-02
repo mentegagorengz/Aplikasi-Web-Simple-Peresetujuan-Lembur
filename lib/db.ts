@@ -8,5 +8,4 @@ export const pool = new Pool({
   database: process.env.DB_NAME,
 });
 
-// Pastikan fungsi 'query' ini di-export agar bisa dipakai di folder API
 export const query = (text: string, params?: any[]) => pool.query(text, params);

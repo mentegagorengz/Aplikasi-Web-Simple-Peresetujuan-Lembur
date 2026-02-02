@@ -16,7 +16,6 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      // MENGHUBUNGKAN KE BACKEND API JWT
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -29,13 +28,11 @@ export default function LoginPage() {
         throw new Error(result.error?.message || "Kredensial tidak valid");
       }
 
-      // LOGIK REDIRECT BERDASARKAN JABATAN (Bukan Nama)
       const userJabatan = result.data.user.jabatan;
 
       if (userJabatan === "HC") {
         router.push("/Admin/Dashboard");
       } else {
-        // Driver atau OB diarahkan ke form pengajuan
         router.push("/User/Submission");
       }
     } catch (err: any) {

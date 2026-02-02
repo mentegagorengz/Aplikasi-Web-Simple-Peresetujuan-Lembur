@@ -15,7 +15,6 @@ export default function DaftarPegawaiPage() {
   const [daftarPegawai, setDaftarPegawai] = useState<Pegawai[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // State Modal & Filter
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPegawai, setSelectedPegawai] = useState<Pegawai | null>(null);
   const [bulan, setBulan] = useState(new Date().getMonth() + 1);
@@ -23,7 +22,6 @@ export default function DaftarPegawaiPage() {
 
   const listBulan = ["JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI", "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER"];
 
-  // Fetch data pegawai dari database saat halaman dimuat
   useEffect(() => {
     const fetchUsers = async () => {
       try {
@@ -56,39 +54,31 @@ export default function DaftarPegawaiPage() {
         return;
       }
 
-      // SORTIR ULANG: Memastikan tanggal lebih awal (muda) di atas — ascending
-      // Gunakan parser yang toleran untuk format tanggal seperti "DD-MM-YYYY" atau ISO
       const parseDateString = (s: string) => {
         if (!s) return new Date(0);
-        // Coba parse langsung (ISO atau format yang bisa dikenali)
         const iso = new Date(s);
         if (!isNaN(iso.getTime())) return iso;
 
-        // Jika gagal, coba split dan anggap formatnya DD-MM-YYYY atau DD/MM/YYYY
         const parts = s.split(/[-\/]/).map((p) => p.trim());
         if (parts.length === 3) {
-          // Jika bagian pertama panjangnya 4, anggap YYYY-MM-DD
           if (parts[0].length === 4) {
             const y = Number(parts[0]);
             const m = Number(parts[1]) - 1;
             const d = Number(parts[2]);
             return new Date(y, m, d);
           }
-          // Anggap format DD-MM-YYYY
           const d = Number(parts[0]);
           const m = Number(parts[1]) - 1;
           const y = Number(parts[2]);
           return new Date(y, m, d);
         }
 
-        // Fallback
         return new Date(s);
       };
 
       const sortedItems = Array.isArray(result.data) ? (result.data as Array<{ tanggal: string }>).slice().sort((a, b) => parseDateString(a.tanggal).getTime() - parseDateString(b.tanggal).getTime()) : [];
 
       const dataLembur = (sortedItems as Array<{ tanggal: string; jam_array?: Array<{ mulai: string; selesai: string }>; keterangan?: string }>).map((item) => {
-        // Perbaikan: parse tanggal secara eksplisit
         const dateObj = parseDateString(item.tanggal);
 
         const marks: number[] = [];
@@ -135,7 +125,6 @@ export default function DaftarPegawaiPage() {
         </div>
       </div>
 
-      {/* Table Section */}
       <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
         {loading ? (
           <div className="p-20 text-center text-slate-400">Memuat data pegawai...</div>
@@ -172,7 +161,6 @@ export default function DaftarPegawaiPage() {
         )}
       </div>
 
-      {/* Modal Periode (Tetap Sama dengan sedikit penyesuaian styling) */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-100">
@@ -187,7 +175,6 @@ export default function DaftarPegawaiPage() {
             </div>
 
             <div className="p-6 space-y-4">
-              {/* Select Bulan & Tahun sama seperti sebelumnya */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-slate-400 uppercase">Bulan</label>

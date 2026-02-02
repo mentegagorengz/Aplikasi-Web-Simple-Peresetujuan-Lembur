@@ -34,7 +34,6 @@ export async function GET(request: Request) {
     const res = await query(sql, [payload.userId]);
     const user = res.rows[0];
 
-    // 4. Validasi Eksistensi & Status Akun
     if (!user) {
       const response = NextResponse.json(
         {
@@ -63,7 +62,6 @@ export async function GET(request: Request) {
       return response;
     }
 
-    // 5. Response Sukses dengan Template Best Practice
     return NextResponse.json({
       status: "success",
       message: "Profil user berhasil dimuat",
@@ -85,7 +83,6 @@ export async function GET(request: Request) {
   } catch (error: any) {
     console.error("Critical Auth Me Error:", error.message);
 
-    // 6. Penanganan Spesifik Sesuai Kode Error (Error Mapping)
     const isExpired = error.code === "ERR_JWT_EXPIRED";
     const response = NextResponse.json(
       {

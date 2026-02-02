@@ -24,7 +24,6 @@ export async function GET(request: Request) {
 
     const result = await query(sql, [userId, bulan, tahun]);
 
-    // Memastikan status response sukses dan data terurut kronologis
     return NextResponse.json({ status: "success", data: result.rows });
   } catch (error: any) {
     console.error("REPORT_API_ERROR:", error.message);

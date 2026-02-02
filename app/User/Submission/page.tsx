@@ -10,8 +10,6 @@ interface RowData {
 }
 
 export default function SubmissionPage() {
-  // 1. State 'user' tidak lagi diambil dari Context,
-  // Identitas akan divalidasi oleh Server via HttpOnly Cookie.
   const [rows, setRows] = useState<RowData[]>([{ tanggal: "", jam: "", keterangan: "" }]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -43,7 +41,6 @@ export default function SubmissionPage() {
 
     try {
       const promises = validRows.map(async (row, index) => {
-        // Validasi format jam 00:00 - 00:00
         if (!row.jam.includes("-")) {
           throw new Error(`Baris ${index + 1}: Format jam tidak valid (Gunakan tanda '-')`);
         }

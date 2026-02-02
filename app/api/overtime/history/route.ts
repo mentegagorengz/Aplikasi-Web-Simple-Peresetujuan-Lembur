@@ -16,7 +16,6 @@ export async function GET() {
     let sql = "";
     let params = [];
 
-    // JIKA LOGIN SEBAGAI HC (ADMIN)
     if (payload.jabatan === "HC") {
       sql = `
         SELECT 
@@ -27,10 +26,8 @@ export async function GET() {
         WHERE o.status IN ('Approved', 'Rejected') -- Ambil semua orang
         ORDER BY o.updated_at DESC;
       `;
-      params = []; // Admin tidak butuh filter ID pribadi
-    }
-    // JIKA LOGIN SEBAGAI DRIVER (USER)
-    else {
+      params = [];
+    } else {
       sql = `
         SELECT id, tanggal::TEXT, jam_array, keterangan, status
         FROM overtime 

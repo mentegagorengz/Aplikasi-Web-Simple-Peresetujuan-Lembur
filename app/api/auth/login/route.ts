@@ -22,7 +22,7 @@ export async function POST(request: Request) {
           },
           metadata: { timestamp },
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
           },
           metadata: { timestamp },
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -54,19 +54,19 @@ export async function POST(request: Request) {
           },
           metadata: { timestamp },
         },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
-    const token = await new SignJWT ({
+    const token = await new SignJWT({
       userId: user.id,
       jabatan: user.jabatan,
       nama: user.nama,
     })
-    .setProtectedHeader({ alg: "HS256" })
-    .setIssuedAt()
-    .setExpirationTime("8h")
-    .sign(SECRET);
+      .setProtectedHeader({ alg: "HS256" })
+      .setIssuedAt()
+      .setExpirationTime("8h")
+      .sign(SECRET);
 
     const response = NextResponse.json(
       {
@@ -80,26 +80,25 @@ export async function POST(request: Request) {
             username: user.username,
             jabatan: user.jabatan,
             status: user.status,
-          }
+          },
         },
         metadata: {
           timestamp,
           api_version: "1.0",
         },
       },
-      { status: 200 }
+      { status: 200 },
     );
 
     response.cookies.set("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 60 * 60 * 8, 
+      maxAge: 60 * 60 * 8,
       path: "/",
     });
-    
-    return response;
 
+    return response;
   } catch (error: any) {
     console.error("Login Error Log:", error);
     return NextResponse.json(
@@ -114,7 +113,7 @@ export async function POST(request: Request) {
           api_version: "1.0",
         },
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

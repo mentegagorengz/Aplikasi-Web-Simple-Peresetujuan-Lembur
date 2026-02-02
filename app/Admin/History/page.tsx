@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from "react";
 import { FileDown, CheckCircle2, XCircle, Printer } from "lucide-react";
 
-// 1. Penyesuaian Interface agar sesuai dengan JSON Response
 interface Jam {
   mulai: string;
   selesai: string;
@@ -13,7 +12,7 @@ interface HistoryItem {
   nama: string;
   jabatan: string;
   tanggal: string;
-  jam_array: Jam[]; // Menggunakan array object sesuai JSON
+  jam_array: Jam[]; 
   keterangan: string;
   status: "Approved" | "Rejected";
 }
@@ -26,7 +25,6 @@ export default function AdminHistoryPage() {
       try {
         const res = await fetch("/api/overtime/history");
         const data = await res.json();
-        // Memastikan data terpetakan dengan benar
         setAllHistory(data.data || []);
       } catch (error) {
         console.error("Gagal menarik data histori:", error);

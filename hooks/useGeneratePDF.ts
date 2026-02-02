@@ -1,12 +1,9 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
-// Kosongkan dulu atau gunakan base64 yang valid
-// Untuk menambahkan signature, paste base64 lengkap dengan prefix "data:image/png;base64,..."
 const HC_SIGNATURE_BASE64: string = "";
 
 export const useGeneratePDF = () => {
-  // Helper: Mendapatkan nama hari dalam Bahasa Indonesia
   const getNamaHari = (tanggalStr: string) => {
     const dateParts = tanggalStr.split("-");
     const date = new Date(Number(dateParts[2]), Number(dateParts[1]) - 1, Number(dateParts[0]));
@@ -17,7 +14,7 @@ export const useGeneratePDF = () => {
     nama: string;
     jabatan: string;
     periode: string;
-    bulan: number; // 1-12
+    bulan: number; 
     tahun: number;
     items: Array<{
       tanggal: string;
@@ -30,7 +27,6 @@ export const useGeneratePDF = () => {
   }) => {
     const doc = new jsPDF("l", "mm", "a4");
 
-    // 1. Header Identitas PT HIP
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9);
     doc.text("PERHITUNGAN LEMBUR DRIVER", 148.5, 15, { align: "center" });
@@ -38,27 +34,22 @@ export const useGeneratePDF = () => {
       align: "center",
     });
 
-    // 2. Informasi Pegawai
     doc.setFontSize(9);
     doc.text(`NAMA      : ${data.nama}`, 20, 35);
     doc.text(`JABATAN   : ${data.jabatan}`, 20, 40);
     doc.text(`PERIODE   : ${data.periode}`, 20, 45);
 
-    // 3. Persiapkan data tabel
     const tableBody: (string | number)[][] = [];
 
-    // Urutkan items berdasarkan tanggal
     const sortedItems = [...data.items].sort((a, b) => {
       const dateA = a.tanggal.split("-").reverse().join("");
       const dateB = b.tanggal.split("-").reverse().join("");
       return dateA.localeCompare(dateB);
     });
 
-    // Loop data yang ada
     sortedItems.forEach((item) => {
       const hariName = item.hari || getNamaHari(item.tanggal);
 
-      // Buat array marks untuk 24 jam
       const marks = Array(24).fill("");
       if (item.jamArray && Array.isArray(item.jamArray)) {
         item.jamArray.forEach((j: number) => {
@@ -70,25 +61,22 @@ export const useGeneratePDF = () => {
         item.tanggal,
         hariName,
         ...marks,
-        "", // Kolom paraf kosong
+        "", 
         item.keterangan || "",
       ]);
     });
 
-    // Tambahkan baris kosong jika kurang dari 7 baris
     const minRows = 7;
     while (tableBody.length < minRows) {
       const emptyRow = ["", "", ...Array(24).fill(""), "", ""];
       tableBody.push(emptyRow);
     }
 
-    // 4. Header jam (1-24)
     const jamHeaders = Array.from({ length: 24 }, (_, i) => ({
       content: (i + 1).toString(),
       styles: { halign: "center" as const, valign: "middle" as const },
     }));
 
-    // 5. Generate tabel dengan autoTable
     autoTable(doc, {
       startY: 55,
       head: [
@@ -143,8 +131,6 @@ export const useGeneratePDF = () => {
       },
     });
 
-    // 6. Area Tanda Tangan
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let finalY = (doc as any).lastAutoTable.finalY + 20;
     if (finalY > 170) {
       doc.addPage();
@@ -155,19 +141,16 @@ export const useGeneratePDF = () => {
     doc.text("Mengetahui,", 20, finalY);
     doc.text("Human Capital Departemen", 20, finalY + 5);
 
-    // Tambahkan tanda tangan digital jika tersedia
     if (HC_SIGNATURE_BASE64 && HC_SIGNATURE_BASE64.length > 100) {
       try {
         doc.addImage(HC_SIGNATURE_BASE64, "PNG", 25, finalY + 7, 35, 18);
       } catch (error) {
         console.error("Gagal memuat tanda tangan digital:", error);
-        // Tambahkan placeholder jika gagal
         doc.setFontSize(8);
         doc.setFont("helvetica", "italic");
         doc.text("(Tanda Tangan Digital)", 25, finalY + 15);
       }
     } else {
-      // Tambahkan placeholder jika signature tidak ada
       doc.setFontSize(8);
       doc.setFont("helvetica", "italic");
       doc.text("(Tanda Tangan Digital)", 25, finalY + 15);
@@ -184,7 +167,6 @@ export const useGeneratePDF = () => {
     doc.text(data.nama, 220, finalY + 30);
     doc.line(220, finalY + 31, 270, finalY + 31);
 
-    // 7. Save PDF
     const fileName = `REKAP_LEMBUR_${data.nama.replace(/\s+/g, "_")}_${data.periode}.pdf`;
     doc.save(fileName);
   };
