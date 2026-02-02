@@ -9,7 +9,6 @@ export async function GET() {
   const timestamp = new Date().toISOString();
 
   try {
-    // Verifikasi token
     const cookieStore = await cookies();
     const token = cookieStore.get("token")?.value;
     if (!token) {
@@ -18,7 +17,6 @@ export async function GET() {
 
     const { payload } = await jwtVerify(token, SECRET);
 
-    // Cek apakah user adalah HC (admin)
     if (payload.jabatan !== "HC") {
       return NextResponse.json({ status: "error", message: "Forbidden - HC only" }, { status: 403 });
     }
@@ -45,7 +43,6 @@ export async function GET() {
       nama: row.nama,
       jabatan: row.jabatan,
       tanggal: row.tanggal,
-      // Mengambil rentang waktu dari indeks pertama jam_array
       jam: row.jam_array && row.jam_array.length > 0 ? `${row.jam_array[0].mulai} - ${row.jam_array[0].selesai}` : "-",
       keterangan: row.keterangan,
       waktu_pengajuan: row.created_at,
